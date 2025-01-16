@@ -1,0 +1,83 @@
+- name: Configure LVM and replace /var
+  hosts: all
+  become: true
+  tasks:
+    - name: Detect if the additional disk exists
+      ansible.builtin.stat:
+        path: /dev/nvme1n1
+      register: disk_status
+
+    - name: Check if the additional disk is available
+      debug:
+        msg: "The additional disk {{ '/dev/nvme1n1' if disk_status.stat.exists else 'does not exist' }}"
+      when: not disk_status.stat.exists
+
+    - name: Create Physical Volume (PV) if it does not exist
+      command: sudo pvcreate /dev/nvme1n1
+      when: disk_status.stat.exists
+      args:
+        creates: /dev/nvme1n1
+
+    - name: Check if the Volume Group (VG) already exists
+      command: vgdisplay vg_var
+      register: vg_status
+      ignore_errors: true
+
+    - name: Create Volume Group (VG) if it does not exist
+      command: vgcreate vg_var /dev/nvme1n1
+      when: vg_status.rc != 0
+
+    - name: Create Logical Volume (LV) if it does not exist
+      command: sudo lvcreate -L 1G -n lv_var vg_var
+      when: disk_status.stat.exists
+      args:
+        creates: /dev/vg_var/lv_var
+
+    - name: Format the partition as ext4 if not already formatted
+      ansible.builtin.command:
+        cmd: mkfs.ext4 /dev/vg_var/lv_var
+      become: true
+
+    - name: Create a temporary mount point
+      file:
+        path: /mnt/var_temp
+        state: directory
+
+    - name: Mount the new partition temporarily
+      mount:
+        path: /mnt/var_temp
+        src: /dev/vg_var/lv_var
+        fstype: ext4
+        state: mounted
+
+    - name: Copy data from /var to the new disk
+      ansible.builtin.command:
+        cmd: rsync -aAX /var/ /mnt/var_temp
+      become: true
+
+    - name: Update /etc/fstab to mount the partition at /var
+      blockinfile:
+        path: /etc/fstab
+        block: |
+          /dev/vg_var/lv_var /var ext4 defaults 0 2
+        state: present
+
+    - name: Unmount the temporary partition
+      mount:
+        path: /mnt/var_temp
+        state: unmounted
+
+    - name: Mount the new partition at /var
+      mount:
+        path: /var
+        src: /dev/vg_var/lv_var
+        fstype: ext4
+        state: mounted
+
+    - name: Verify that the partition is correctly mounted
+      command: sudo df -h
+      register: mount_status
+
+    - name: Show the final state of the disks
+      debug:
+        var: mount_status.stdout
