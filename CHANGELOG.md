@@ -1,3 +1,11 @@
+# [1.3.0](https://github.com/jayal13/NEBo-task/compare/v1.2.0...v1.3.0) (2025-01-17)
+
+
+### Features
+
+* add api app code ([c5c4258](https://github.com/jayal13/NEBo-task/commit/c5c4258b8c01bd534c7bf7686bca6ade37789894))
+* add docker versioning ([950453c](https://github.com/jayal13/NEBo-task/commit/950453c27359cbc4cb40dd4d99b8a1beaf32cefe))
+
 # [1.2.0](https://github.com/jayal13/NEBo-task/compare/v1.1.0...v1.2.0) (2025-01-17)
 
 
