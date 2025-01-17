@@ -2,6 +2,21 @@ provider "aws" {
   region = var.region
 }
 
+# Obtains the metadata of the secret
+data "aws_secretsmanager_secret" "ssh_keys" {
+  name = "amazon_ssh_keys"
+}
+
+# Obtain the secret
+data "aws_secretsmanager_secret_version" "ssh_keys_version" {
+  secret_id = data.aws_secretsmanager_secret.ssh_keys.id
+}
+
+# Retives the secret as a map
+locals {
+  ssh_keys = jsondecode(data.aws_secretsmanager_secret_version.ssh_keys_version.secret_string)
+}
+
 # Creates a vpc that is the container of subnet, instances, gateway, etc.
 resource "aws_vpc" "main" {
   cidr_block = var.vpc_ip
@@ -101,7 +116,7 @@ resource "aws_security_group" "sg" {
 # Creates a key pair to be used to conect whith the instance
 resource "aws_key_pair" "nebo" {
   key_name   = var.name
-  public_key = file(var.public_ssh_key)
+  public_key = local.ssh_keys.public_ssh_key
 }
 
 # Creates an instance
