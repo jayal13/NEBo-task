@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/jayal13/NEBo-task/compare/v1.1.0...v1.2.0) (2025-01-17)
+
+
+### Features
+
+* add secretsmanager and fix small bugs on ansible ([458259f](https://github.com/jayal13/NEBo-task/commit/458259f8b15287f8dd4cc56a145c88dc078beab1))
+
 # [1.1.0](https://github.com/jayal13/NEBo-task/compare/v1.0.0...v1.1.0) (2025-01-16)
 
 
