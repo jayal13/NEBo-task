@@ -2,6 +2,23 @@
   hosts: all
   become: true
   tasks:
+    - name: Check if /var is already mounted on the correct volume
+      command: mountpoint /var
+      register: var_mount_check
+      failed_when: false
+      changed_when: false
+
+    - name: Skip configuration if /var is already mounted correctly
+      debug:
+        msg: "/var is already mounted on /dev/vg_var/lv_var. Skipping tasks."
+      when: var_mount_check.rc == 0
+      tags: skip_play
+
+    - name: Stop playbook if /var is already configured
+      meta: end_play
+      when: var_mount_check.rc == 0
+      tags: skip_play
+
     - name: Detect if the additional disk exists
       ansible.builtin.stat:
         path: /dev/nvme1n1
@@ -13,7 +30,7 @@
       when: not disk_status.stat.exists
 
     - name: Create Physical Volume (PV) if it does not exist
-      command: sudo pvcreate /dev/nvme1n1
+      command: pvcreate /dev/nvme1n1
       when: disk_status.stat.exists
       args:
         creates: /dev/nvme1n1
@@ -27,18 +44,25 @@
       command: vgcreate vg_var /dev/nvme1n1
       when: vg_status.rc != 0
 
+    - name: Check if Logical Volume (LV) exists
+      command: lvdisplay /dev/vg_var/lv_var
+      register: lv_status
+      ignore_errors: true
+
     - name: Create Logical Volume (LV) if it does not exist
-      command: sudo lvcreate -L 1G -n lv_var vg_var
-      when: disk_status.stat.exists
-      args:
-        creates: /dev/vg_var/lv_var
+      command: lvcreate -L 1G -n lv_var vg_var
+      when: lv_status.rc != 0
+
+    - name: Check if the partition is already formatted
+      command: lsblk -f /dev/vg_var/lv_var
+      register: partition_status
 
     - name: Format the partition as ext4 if not already formatted
-      ansible.builtin.command:
-        cmd: mkfs.ext4 /dev/vg_var/lv_var
+      command: mkfs.ext4 /dev/vg_var/lv_var
+      when: '"ext4" not in partition_status.stdout'
       become: true
 
-    - name: Create a temporary mount point
+    - name: Create a temporary mount point if not exists
       file:
         path: /mnt/var_temp
         state: directory
@@ -50,9 +74,14 @@
         fstype: ext4
         state: mounted
 
+    - name: Check if data is already synchronized
+      command: rsync -n -aAX /var/ /mnt/var_temp
+      register: rsync_check
+      changed_when: rsync_check.stdout != ""
+
     - name: Copy data from /var to the new disk
-      ansible.builtin.command:
-        cmd: rsync -aAX /var/ /mnt/var_temp
+      command: rsync -aAX /var/ /mnt/var_temp
+      when: rsync_check.stdout != ""
       become: true
 
     - name: Update /etc/fstab to mount the partition at /var
@@ -75,9 +104,9 @@
         state: mounted
 
     - name: Verify that the partition is correctly mounted
-      command: sudo df -h
+      command: df -h
       register: mount_status
 
     - name: Show the final state of the disks
       debug:
-        var: mount_status.stdout
+        var: mount_stat
