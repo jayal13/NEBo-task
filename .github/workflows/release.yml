@@ -59,9 +59,11 @@ jobs:
       # Step 2: Download and install docker-credential-secretservice
       - name: Download docker-credential-secretservice
         run: |
-          curl -fsSL https://github.com/docker/docker-credential-helpers/releases/latest/download/docker-credential-secretservice_linux_amd64 \
-            -o /usr/local/bin/docker-credential-secretservice
-          chmod +x /usr/local/bin/docker-credential-secretservice
+          wget https://github.com/docker/docker-credential-helpers/releases/download/v0.6.2/docker-credential-secretservice-v0.6.2-amd64.tar.gz
+          tar -xf docker-credential-secretservice-v0.6.2-amd64.tar.gz
+          chmod +x docker-credential-secretservice
+          sudo mv docker-credential-secretservice /usr/local/bin/
+
 
       # Step 3: Configure Docker credential helper
       - name: Configure Docker credential helper
