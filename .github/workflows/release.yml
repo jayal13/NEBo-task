@@ -46,11 +46,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Set up Docker
+      # Step 2: Configure Docker credential helper
+      - name: Configure Docker credential helper
+        run: |
+          mkdir -p ~/.docker
+          echo '{
+            "credsStore": "secretservice"
+          }' > ~/.docker/config.json
+
+      # Step 3: Authenticate with Docker Hub
       - name: Authenticate with Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # Step 3: Run the script
+      # Step 4: Run the script
       - name: Run Docker build script
         run: |
           chmod +x ./docker-versions.sh
