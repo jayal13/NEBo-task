@@ -56,11 +56,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Install secretservice helper
-      - name: Install Docker credential helper
+      # Step 2: Download and install docker-credential-secretservice
+      - name: Download docker-credential-secretservice
         run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-credential-secretservice
+          curl -fsSL https://github.com/docker/docker-credential-helpers/releases/latest/download/docker-credential-secretservice_linux_amd64 \
+            -o /usr/local/bin/docker-credential-secretservice
+          chmod +x /usr/local/bin/docker-credential-secretservice
 
       # Step 3: Configure Docker credential helper
       - name: Configure Docker credential helper
