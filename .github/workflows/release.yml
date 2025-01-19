@@ -89,6 +89,6 @@ jobs:
         run: |
           curl -X POST -H 'Content-type: application/json' \
             --data '{
-              "text": "Job release-code completed with status: ${{ job.status }} on branch: ${{ github.ref }}"
+              "text": "Job release-docker completed with status: ${{ job.status }} on branch: ${{ github.ref }}"
             }' \
             ${{ secrets.SLACK_WEBHOOK }}
