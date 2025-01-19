@@ -69,7 +69,7 @@ jobs:
         run: |
           mkdir -p ~/.docker
           echo '{
-            "credsStore": "store"
+            "credsStore": "credStore"
           }' > ~/.docker/config.json
 
       # Step 4: Authenticate with Docker Hub
