@@ -42,9 +42,9 @@ jobs:
         if: always()
         run: |
           curl -X POST -H 'Content-type: application/json' \
-            --data '{
-              "text": "Job release-code completed with status: ${{ job.status }} on branch: ${{ github.ref }}"
-            }' \
+            --data "{
+              \"text\": \"Job \release-docker\ completed with status: \\${{ job.status }}\ on branch: \\${{ github.ref }}\. \nDate and Time: ${DATE}\"
+            }" \
             ${{ secrets.SLACK_WEBHOOK }}
 
   # Job para versionar la imagen Docker
@@ -56,27 +56,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Download and install docker-credential-secretservice
-      - name: Download docker-credential-secretservice
-        run: |
-          wget https://github.com/docker/docker-credential-helpers/releases/download/v0.6.2/docker-credential-secretservice-v0.6.2-amd64.tar.gz
-          tar -xf docker-credential-secretservice-v0.6.2-amd64.tar.gz
-          chmod +x docker-credential-secretservice
-          sudo mv docker-credential-secretservice /usr/local/bin/
-
-      # Step 3: Configure Docker credential helper
-      - name: Configure Docker credential helper
-        run: |
-          mkdir -p ~/.docker
-          echo '{
-            "credsStore": "credStore"
-          }' > ~/.docker/config.json
-
-      # Step 4: Authenticate with Docker Hub
+      # Step 2: Authenticate with Docker Hub
       - name: Authenticate with Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # Step 5: Run the script
+      # Step 3: Run the script
       - name: Run Docker build script
         run: |
           chmod +x ./docker-versions.sh
@@ -90,7 +74,7 @@ jobs:
         if: always()
         run: |
           curl -X POST -H 'Content-type: application/json' \
-            --data '{
-              "text": "Job release-docker completed with status: ${{ job.status }} on branch: ${{ github.ref }}"
-            }' \
+            --data "{
+              \"text\": \"Job \release-docker\ completed with status: \\${{ job.status }}\ on branch: \\${{ github.ref }}\. \nDate and Time: ${DATE}\"
+            }" \
             ${{ secrets.SLACK_WEBHOOK }}
