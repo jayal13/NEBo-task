@@ -39,7 +39,7 @@ jobs:
 
       # Notify Slack
       - name: Notify Slack
-        if: always() # Ejecutar siempre, pase o falle
+        if: always()
         run: |
           curl -X POST -H 'Content-type: application/json' \
             --data '{
@@ -76,13 +76,3 @@ jobs:
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-
-      # Notify Slack
-      - name: Notify Slack
-        if: always() # Ejecutar siempre, pase o falle
-        run: |
-          curl -X POST -H 'Content-type: application/json' \
-            --data '{
-              "text": "Job release-docker completed with status: ${{ job.status }} on branch: ${{ github.ref }}"
-            }' \
-            ${{ secrets.SLACK_WEBHOOK }}
