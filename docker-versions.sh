@@ -45,8 +45,6 @@ while read -r COMMIT; do
     VERSIONS_MAP["$CURRENT_VERSION"]="$HASH $MESSAGE"
 done <<< "$COMMITS"
 
-DOCKER_PASSWORD="asdfsfsdf"
-DOCKER_USERNAME="lkhjklhjlhjl"
 DOCKER_REPO="$DOCKER_USERNAME/test"
 OVERVIEW_FILE="./go-rest-api-nebo/cmd/server/README.md"
 
