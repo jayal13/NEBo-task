@@ -31,13 +31,23 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # Excecute semantic-release
+      # Execute semantic-release
       - name: Semantic Release for GitHub Code
         run: npm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # Job para versionar la imagen Docker
+      # Notify Slack
+      - name: Notify Slack
+        if: always() # Ejecutar siempre, pase o falle
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{
+              "text": "Job release-code completed with status: ${{ job.status }} on branch: ${{ github.ref }}"
+            }' \
+            ${{ secrets.SLACK_WEBHOOK }}
+
+  # Job para versionar la imagen Docker
   release-docker:
     runs-on: ubuntu-latest
 
@@ -51,7 +61,7 @@ jobs:
         run: |
           mkdir -p ~/.docker
           echo '{
-            "credsStore": "secretservice"
+            "credsStore": "store"
           }' > ~/.docker/config.json
 
       # Step 3: Authenticate with Docker Hub
@@ -66,3 +76,13 @@ jobs:
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+      # Notify Slack
+      - name: Notify Slack
+        if: always() # Ejecutar siempre, pase o falle
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{
+              "text": "Job release-docker completed with status: ${{ job.status }} on branch: ${{ github.ref }}"
+            }' \
+            ${{ secrets.SLACK_WEBHOOK }}

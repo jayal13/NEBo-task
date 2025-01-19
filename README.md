@@ -1,0 +1,1 @@
+![CI](https://github.com/jayal13/NEBo-task/actions/workflows/ci.yml/badge.svg?branch=main)
