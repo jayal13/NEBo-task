@@ -11,11 +11,13 @@ permissions:
   pull-requests: write
 
 jobs:
-  release:
+  # Job for GitHub
+  release-code:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
         with:
           persist-credentials: true
 
@@ -30,7 +32,29 @@ jobs:
         run: npm install
 
       # Excecute semantic-release
-      - name: Semantic Release
+      - name: Semantic Release for GitHub Code
         run: npm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # Job para versionar la imagen Docker
+  release-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Docker
+      - name: Authenticate with Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      # Step 3: Run the script
+      - name: Run Docker build script
+        run: |
+          chmod +x ./docker-versions.sh
+          ./docker-versions.sh
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
