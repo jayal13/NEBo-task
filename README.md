@@ -1,1 +1,1 @@
-![CI](https://github.com/jayal13/NEBo-task/actions/workflows/WORKFLOW-FILE/badge.svg)
+![CI](https://github.com/jayal13/NEBo-task/actions/workflows/release.yml/badge.svg)
