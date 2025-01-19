@@ -63,15 +63,13 @@ jobs:
           tar -xf docker-credential-secretservice-v0.6.2-amd64.tar.gz
           chmod +x docker-credential-secretservice
           sudo mv docker-credential-secretservice /usr/local/bin/
-          sudo apt-get update && sudo apt-get install -y libsecret-1-0
-
 
       # Step 3: Configure Docker credential helper
       - name: Configure Docker credential helper
         run: |
           mkdir -p ~/.docker
           echo '{
-            "credsStore": "secretservice"
+            "credsStore": "store"
           }' > ~/.docker/config.json
 
       # Step 4: Authenticate with Docker Hub
