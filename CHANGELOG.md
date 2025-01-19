@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/jayal13/NEBo-task/compare/v1.3.0...v1.4.0) (2025-01-19)
+
+
+### Features
+
+* independent version controll for docker image ([6024b57](https://github.com/jayal13/NEBo-task/commit/6024b577cf8786ddf297b6fd79b1470aec629603))
+
 # [1.3.0](https://github.com/jayal13/NEBo-task/compare/v1.2.0...v1.3.0) (2025-01-17)
 
 
