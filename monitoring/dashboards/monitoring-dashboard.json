@@ -1,0 +1,59 @@
+{
+    "dashboard": {
+      "id": null,
+      "title": "Container Monitoring Dashboard",
+      "timezone": "browser",
+      "panels": [
+        {
+          "type": "graph",
+          "title": "CPU Usage (%)",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+              "legendFormat": "{{instance}}",
+              "refId": "A"
+            }
+          ],
+          "yaxes": [
+            {
+              "format": "percent",
+              "label": "CPU Usage",
+              "min": 0,
+              "max": 100
+            }
+          ],
+          "alert": {
+            "conditions": [
+              {
+                "evaluator": {
+                  "params": [70],
+                  "type": "gt"
+                },
+                "operator": {
+                  "type": "and"
+                },
+                "query": {
+                  "params": ["A", "5m", "now"]
+                },
+                "reducer": {
+                  "type": "avg"
+                },
+                "type": "query"
+              }
+            ],
+            "executionErrorState": "alerting",
+            "frequency": "1m",
+            "handler": 1,
+            "message": "High CPU usage detected on instance {{ $labels.instance }}",
+            "name": "High CPU Usage Alert",
+            "notifications": [
+              {
+                "uid": "slack_channel"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
