@@ -12,12 +12,12 @@ data "aws_secretsmanager_secret_version" "ssh_keys_version" {
   secret_id = data.aws_secretsmanager_secret.ssh_keys.id
 }
 
-# Retives the secret as a map
+# Retrieves the secret as a map
 locals {
   ssh_keys = jsondecode(data.aws_secretsmanager_secret_version.ssh_keys_version.secret_string)
 }
 
-# Creates a vpc that is the container of subnet, instances, gateway, etc.
+# Creates a VPC that is the container of subnet, instances, gateway, etc.
 resource "aws_vpc" "main" {
   cidr_block = var.vpc_ip
   tags = {
@@ -76,13 +76,13 @@ resource "aws_route_table" "public" {
   }
 }
 
-# Assosiate a route table to a subnet
+# Associate a route table to a subnet
 resource "aws_route_table_association" "public_assoc" {
   subnet_id      = aws_subnet.public.id
   route_table_id = aws_route_table.public.id
 }
 
-#this block will retrive the ip adress of who is running terraform
+# Retrieves the IP address of who is running Terraform
 data "http" "my_ip" {
   url = "http://ifconfig.me"
 }
@@ -133,6 +133,16 @@ resource "aws_instance" "app" {
   }
 }
 
+# Create AMI from Instance
+resource "aws_ami_from_instance" "custom_ami" {
+  name               = "${var.name}-custom-ami"
+  source_instance_id = aws_instance.app.id
+  tags = {
+    task = "CLOUD: Provision of virtual machines with predefined types and images"
+    source = "terraform"
+  }
+}
+
 # Creates a new EBS volume
 resource "aws_ebs_volume" "var_volume" {
   availability_zone = aws_instance.app.availability_zone
@@ -143,14 +153,14 @@ resource "aws_ebs_volume" "var_volume" {
   }
 }
 
-# Attachh the volume to the EC2 instances
+# Attach the volume to the EC2 instances
 resource "aws_volume_attachment" "var_volume_attach" {
   device_name = "/dev/xvdb"
   volume_id   = aws_ebs_volume.var_volume.id
   instance_id = aws_instance.app.id
 }
 
-# Creates an .ini file to be used by ansible
+# Creates an .ini file for Ansible
 resource "local_file" "host" {
   content  = <<EOF
   [aws_instance]
@@ -159,7 +169,116 @@ resource "local_file" "host" {
   filename = "${path.module}/../ansible/inventory/host.ini"
 }
 
-# Shows the public IP adress of the instance
+# Shows the public IP address of the instance
 output "public_ip" {
   value = aws_instance.app.public_ip
+}
+
+# Auto Scaling: Launch Configuration
+resource "aws_launch_template" "lt" {
+  name_prefix   = "${var.name}-lt"
+  image_id      = aws_instance.app.ami
+  instance_type = var.instance_type
+  key_name      = aws_key_pair.nebo.key_name
+
+  network_interfaces {
+    security_groups = [aws_security_group.sg.id]
+    subnet_id       = aws_subnet.public.id
+  }
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      task   = "CLOUD: Provision of virtual machines with predefined types and images"
+      source = "terraform"
+    }
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = {
+    task   = "CLOUD: Control scaling parameters for virtual machines"
+    source = "terraform"
+  }
+}
+
+# Auto Scaling: Auto Scaling Group
+resource "aws_autoscaling_group" "asg" {
+  name                = "${var.name}-asg"
+  max_size            = 3
+  min_size            = 1
+  desired_capacity    = 1
+  vpc_zone_identifier = [aws_subnet.public.id]
+
+  launch_template {
+    id      = aws_launch_template.lt.id
+    version = "$Latest"
+  }
+
+  tag {
+    key                 = "source"
+    value               = "terraform"
+    propagate_at_launch = true
+  }
+
+  health_check_type         = "EC2"
+  health_check_grace_period = 300
+}
+
+# Auto Scaling: Policies
+resource "aws_autoscaling_policy" "scale_out" {
+  name                   = "scale-out-policy"
+  scaling_adjustment     = 1
+  adjustment_type        = "ChangeInCapacity"
+  autoscaling_group_name = aws_autoscaling_group.asg.id
+}
+
+resource "aws_autoscaling_policy" "scale_in" {
+  name                   = "scale-in-policy"
+  scaling_adjustment     = -1
+  adjustment_type        = "ChangeInCapacity"
+  autoscaling_group_name = aws_autoscaling_group.asg.id
+}
+
+# Auto Scaling: CloudWatch Alarms
+resource "aws_cloudwatch_metric_alarm" "cpu_high" {
+  alarm_name                = "HighCPUAlarm"
+  comparison_operator       = "GreaterThanOrEqualToThreshold"
+  evaluation_periods        = 2
+  metric_name               = "CPUUtilization"
+  namespace                 = "AWS/EC2"
+  period                    = 300
+  statistic                 = "Average"
+  threshold                 = 80
+  alarm_actions             = [aws_autoscaling_policy.scale_out.arn]
+  dimensions = {
+    AutoScalingGroupName = aws_autoscaling_group.asg.name
+  }
+
+  tags = {
+    task   = "CLOUD: Control scaling parameters for virtual machines"
+    source = "terraform"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "cpu_low" {
+  alarm_name                = "LowCPUAlarm"
+  comparison_operator       = "LessThanOrEqualToThreshold"
+  evaluation_periods        = 2
+  metric_name               = "CPUUtilization"
+  namespace                 = "AWS/EC2"
+  period                    = 300
+  statistic                 = "Average"
+  threshold                 = 20
+  alarm_actions             = [aws_autoscaling_policy.scale_in.arn]
+  dimensions = {
+    AutoScalingGroupName = aws_autoscaling_group.asg.name
+  }
+
+  tags = {
+    task   = "CLOUD: Control scaling parameters for virtual machines"
+    source = "terraform"
+  }
 }
