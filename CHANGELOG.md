@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/jayal13/NEBo-task/compare/v1.5.0...v1.6.0) (2025-01-24)
+
+
+### Features
+
+* add database instances ([265824a](https://github.com/jayal13/NEBo-task/commit/265824a6b6a25331788e19bd7307c7a58296580a))
+
 # [1.5.0](https://github.com/jayal13/NEBo-task/compare/v1.4.0...v1.5.0) (2025-01-24)
 
 
