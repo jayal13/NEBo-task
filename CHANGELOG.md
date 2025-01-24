@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/jayal13/NEBo-task/compare/v1.4.0...v1.5.0) (2025-01-24)
+
+
+### Features
+
+* add autoscaling group ([45a18b3](https://github.com/jayal13/NEBo-task/commit/45a18b3569379dcbfb4d6532e421aa99118e577f))
+
 # [1.4.0](https://github.com/jayal13/NEBo-task/compare/v1.3.0...v1.4.0) (2025-01-19)
 
 
