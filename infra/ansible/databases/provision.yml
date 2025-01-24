@@ -1,0 +1,240 @@
+---
+- name: Provisión y configuración de bases de datos
+  hosts: all
+  become: yes
+  tasks:
+    - name: Actualizar e instalar dependencias básicas
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      with_items:
+        - libssl3
+        - curl
+        - software-properties-common
+        - apt-transport-https
+        - gnupg
+        - ca-certificates
+
+# - name: Instalar MongoDB 7.0 en Ubuntu 22.04
+#   hosts: mongodb
+#   become: yes
+#   vars_files:
+#     - ./secrets.yml
+#   tasks:
+#     - name: Verificar las variables cargadas
+#       debug:
+#         msg: "mongo_admin_password: {{ mongo_admin_password }}, mongo_user_password: {{ mongo_user_password }}"
+
+#     - name: Importar la clave pública de MongoDB
+#       shell: |
+#         curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | \
+#         gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg --dearmor
+#       args:
+#         executable: /bin/bash
+#         creates: /usr/share/keyrings/mongodb-server-8.0.gpg
+
+#     - name: Agregar el repositorio de MongoDB 8.0
+#       copy:
+#         content: "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse\n"
+#         dest: /etc/apt/sources.list.d/mongodb-org-8.0.list
+#         mode: '0644'
+
+#     - name: Actualizar la caché de APT
+#       apt:
+#         update_cache: yes
+
+#     - name: Instalar MongoDB
+#       apt:
+#         name: mongodb-org
+#         state: present
+
+#     - name: Iniciar y habilitar el servicio de MongoDB
+#       systemd:
+#         name: mongod
+#         state: started
+#         enabled: yes
+    
+#     - name: Modificar bindIpAll en mongod.conf
+#       lineinfile:
+#         path: /etc/mongod.conf
+#         regexp: '^  bindIp.*'
+#         line: '  bindIpAll: true'
+#         insertafter: '^net:'
+
+#     - name: Configurar autenticación en MongoDB
+#       lineinfile:
+#         path: /etc/mongod.conf
+#         regexp: '^security:$'
+#         line: |
+#           security:
+#         insertafter: '^#security:'
+
+#     - name: Configurar autenticación en MongoDB
+#       lineinfile:
+#         path: /etc/mongod.conf
+#         regexp: '^  authorization.*'
+#         line: '  authorization: enabled'
+#         insertafter: '^security:'
+        
+#     - name: Reiniciar MongoDB
+#       systemd:
+#         name: mongod
+#         state: restarted
+
+#     - name: Verificar si el archivo de registro existe
+#       stat:
+#         path: /etc/mongo_admin_created
+#       register: mongo_admin_created
+
+#     - name: Crear usuario administrador en MongoDB
+#       shell: |
+#         mongosh --port 27017 admin --eval '
+#         db.createUser({
+#           user: "admin",
+#           pwd: "{{ mongo_admin_password }}",
+#           roles: ["root"]
+#         })'
+#       args:
+#         executable: /bin/bash
+#       when: not mongo_admin_created.stat.exists
+#       register: admin_user_created
+
+#     - name: Registrar la creación del usuario administrador
+#       copy:
+#         content: "Admin user created"
+#         dest: /etc/mongo_admin_created
+#         mode: '0644'
+#       when: admin_user_created.changed
+
+#     - name: Crear base de datos y usuario en MongoDB
+#       shell: |
+#         mongosh --port 27017 admin --username admin --password "{{ mongo_admin_password }}" --authenticationDatabase admin --eval '
+#         db.getSiblingDB("nebo-task").createUser({
+#           user: "nebo",
+#           pwd: "secure_password",
+#           roles: ["readWrite"]
+#         })'
+#       args:
+#         executable: /bin/bash
+
+# - name: Configurar Redis
+#   hosts: redis
+#   become: yes
+#   vars_files:
+#     - ./secrets.yml
+#   tasks:
+#     - name: Instalar Redis
+#       apt:
+#         name: redis-server
+#         state: present
+
+#     - name: Configurar contraseña en Redis
+#       lineinfile:
+#         path: /etc/redis/redis.conf
+#         regexp: '^#?requirepass'
+#         line: 'requirepass "{{ mysql_password  }}"'
+
+#     - name: Modificar bind en redis.conf
+#       lineinfile:
+#         path: /etc/redis/redis.conf
+#         regexp: '^  bind.*'
+#         line: 'bind * -::* '
+
+#     - name: Reiniciar el servicio de Redis
+#       systemd:
+#         name: redis-server
+#         state: restarted
+#         enabled: yes
+
+#     - name: Crear usuario ACL para Redis
+#       shell: |
+#         redis-cli -a secure_password ACL SETUSER nebo on >password allkeys allcommands
+
+- name: Configuración de MySQL
+  hosts: mysql
+  become: yes
+  vars_files:
+    - secrets.yml  # Archivo encriptado con Ansible Vault para guardar contraseñas
+  tasks:
+    # 1. Verificar que MySQL está instalado
+    - name: Instalar MySQL si es necesario
+      ansible.builtin.apt:
+        name: mysql-server
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Asegurarse de que MySQL está iniciado
+      ansible.builtin.service:
+        name: mysql
+        state: started
+        enabled: yes
+
+    - name: Permitir conexiones remotas en MySQL
+      lineinfile:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        regexp: '^bind-address'
+        line: 'bind-address = 0.0.0.0'
+        state: present
+      notify: Reiniciar MySQL
+
+    - name: Reiniciar MySQL
+      systemd:
+        name: mysql
+        state: restarted
+
+    # 2. Cambiar el método de autenticación para el usuario root
+    - name: Verificar si el archivo de marcador existe
+      stat:
+        path: /etc/mysql_auth_configured
+      register: mysql_auth_configured
+
+    - name: Cambiar autenticación de root a mysql_native_password
+      shell: |
+        mysql -u root <<EOF
+        ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_password }}';
+        FLUSH PRIVILEGES;
+        EOF
+      args:
+        executable: /bin/bash
+      when: not mysql_auth_configured.stat.exists
+      register: mysql_auth_updated
+
+    - name: Crear archivo de marcador para el cambio de autenticación
+      ansible.builtin.file:
+        path: /etc/mysql_auth_configured
+        state: touch
+      when: mysql_auth_updated.changed
+
+    # 3. Crear un marcador para evitar cambiar la autenticación en cada ejecución
+    - name: Crear archivo de marcador para el cambio de autenticación
+      ansible.builtin.file:
+        path: /etc/mysql_auth_configured
+        state: touch
+      when: mysql_auth_updated.changed
+
+    # 4. Crear archivo /root/.my.cnf para las credenciales de MySQL
+    - name: Crear archivo de configuración de MySQL para root
+      ansible.builtin.copy:
+        dest: /root/.my.cnf
+        content: |
+          [client]
+          user = root
+          password = "{{ mysql_password }}"
+        mode: '0600'
+      when: not mysql_auth_configured.stat.exists
+
+    # 5. Crear la base de datos
+    - name: Crear base de datos MySQL
+      mysql_db:
+        name: nebo-task
+        state: present
+
+    # 6. Crear el usuario y asignar permisos
+    - name: Crear usuario MySQL y asignar permisos
+      mysql_user:
+        name: nebo
+        password: "{{ mysql_password }}"
+        priv: "nebo-task.*:ALL"
+        host: "%"
+        state: present

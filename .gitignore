@@ -2,3 +2,4 @@
 *.tfstate*
 
 host.ini
+local_pass.yml
