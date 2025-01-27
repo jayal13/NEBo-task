@@ -161,12 +161,12 @@ resource "aws_volume_attachment" "var_volume_attach" {
 }
 
 # Creates an .ini file for Ansible
-resource "local_file" "host" {
+resource "local_file" "lvm" {
   content  = <<EOF
   [aws_instance]
   ${aws_instance.app.public_ip} ansible_user=ubuntu ansible_private_key_file=${var.private_ssh_key}
   EOF
-  filename = "${path.module}/../ansible/inventory/host.ini"
+  filename = "${path.module}/../ansible/lvm/inventory/host.ini"
 }
 
 # Shows the public IP address of the instance
@@ -281,6 +281,184 @@ resource "aws_cloudwatch_metric_alarm" "cpu_low" {
     task   = "CLOUD: Control scaling parameters for virtual machines"
     source = "terraform"
   }
+}
+
+# Security group for MongoDB
+resource "aws_security_group" "mongodb_sg" {
+  name        = "${var.name}-mongodb-sg"
+  description = "SG for MongoDB"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["${data.http.my_ip.body}/32"]
+  }
+
+  ingress {
+    description = "MongoDB Access"
+    from_port   = 27017
+    to_port     = 27017
+    protocol    = "tcp"
+    cidr_blocks = ["${data.http.my_ip.body}/32"] # Allow only your IP
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    source = "terraform"
+    task   = "CLOUD: Provision of virtual machines with predefined types and images"
+  }
+}
+
+# Security group for Redis
+resource "aws_security_group" "redis_sg" {
+  name        = "${var.name}-redis-sg"
+  description = "SG for Redis"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["${data.http.my_ip.body}/32"]
+  }
+  
+  ingress {
+    description = "Redis Access"
+    from_port   = 6379
+    to_port     = 6379
+    protocol    = "tcp"
+    cidr_blocks = ["${data.http.my_ip.body}/32"] # Allow only your IP
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    source = "terraform"
+    task   = "CLOUD: Provision of virtual machines with predefined types and images"
+  }
+}
+
+# Security group for MySQL
+resource "aws_security_group" "mysql_sg" {
+  name        = "${var.name}-mysql-sg"
+  description = "SG for MySQL"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["${data.http.my_ip.body}/32"]
+  }
+
+  ingress {
+    description = "MySQL Access"
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    cidr_blocks = ["${data.http.my_ip.body}/32"] # Allow only your IP
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    source = "terraform"
+    task   = "CLOUD: Provision of virtual machines with predefined types and images"
+  }
+}
+
+# Creates an instance for MongoDB
+resource "aws_instance" "mongodb" {
+  ami                    = var.ami
+  instance_type          = var.instance_type
+  subnet_id              = aws_subnet.public.id
+  vpc_security_group_ids = [aws_security_group.mongodb_sg.id]
+  key_name               = aws_key_pair.nebo.key_name
+
+  tags = {
+    source = "terraform"
+    task   = "CLOUD: Provision of virtual machines with predefined types and images"
+  }
+}
+
+# Creates an instance for Redis
+resource "aws_instance" "redis" {
+  ami                    = var.ami
+  instance_type          = var.instance_type
+  subnet_id              = aws_subnet.public.id
+  vpc_security_group_ids = [aws_security_group.redis_sg.id]
+  key_name               = aws_key_pair.nebo.key_name
+
+  tags = {
+    source = "terraform"
+    task   = "CLOUD: Provision of virtual machines with predefined types and images"
+  }
+}
+
+# Creates an instance for MySQL
+resource "aws_instance" "mysql" {
+  ami                    = var.ami
+  instance_type          = var.instance_type
+  subnet_id              = aws_subnet.public.id
+  vpc_security_group_ids = [aws_security_group.mysql_sg.id]
+  key_name               = aws_key_pair.nebo.key_name
+
+  tags = {
+    source = "terraform"
+    task   = "CLOUD: Provision of virtual machines with predefined types and images"
+  }
+}
+
+# Creates an .ini file for Ansible
+resource "local_file" "databases" {
+  content = <<EOF
+[mongodb]
+${aws_instance.mongodb.public_ip} ansible_user=ubuntu ansible_private_key_file=${var.private_ssh_key} ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+
+[redis]
+${aws_instance.redis.public_ip} ansible_user=ubuntu ansible_private_key_file=${var.private_ssh_key} ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+
+[mysql]
+${aws_instance.mysql.public_ip} ansible_user=ubuntu ansible_private_key_file=${var.private_ssh_key} ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+EOF
+  filename = "${path.module}/../ansible/databases/inventory/host.ini"
+
+  depends_on = [aws_route_table_association.public_assoc]
+}
+
+
+# Output the private IPs of the instances
+output "mongodb_public_ip" {
+  value = aws_instance.mongodb.public_ip
+}
+
+output "redis_public_ip" {
+  value = aws_instance.redis.public_ip
+}
+
+output "mysql_public_ip" {
+  value = aws_instance.mysql.public_ip
 }
 
 # ECS Cluster
