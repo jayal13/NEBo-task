@@ -60,3 +60,8 @@ variable "ebs_size" {
   default     = 2
   description = "size in GB of the ebs"
 }
+
+variable "sns_email" {
+  type = string
+  description = "alerts email receiver"
+}
