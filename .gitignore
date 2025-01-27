@@ -1,4 +1,5 @@
 .terraform*
 *.tfstate*
+*.tfvars
 
 host.ini
