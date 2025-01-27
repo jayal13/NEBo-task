@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/jayal13/NEBo-task/compare/v1.6.0...v1.7.0) (2025-01-27)
+
+
+### Features
+
+* add monitoring for containers ([cd7036c](https://github.com/jayal13/NEBo-task/commit/cd7036ce968939175b5ef44b18bcc76037becc47))
+
 # [1.6.0](https://github.com/jayal13/NEBo-task/compare/v1.5.0...v1.6.0) (2025-01-24)
 
 
