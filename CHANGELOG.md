@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/jayal13/NEBo-task/compare/v1.8.0...v1.9.0) (2025-01-28)
+
+
+### Features
+
+* add dns for principal instance ([3dafdaf](https://github.com/jayal13/NEBo-task/commit/3dafdaf8cd07edf6ca2cc0f580e0faf5c265b118))
+
 # [1.8.0](https://github.com/jayal13/NEBo-task/compare/v1.7.0...v1.8.0) (2025-01-28)
 
 
