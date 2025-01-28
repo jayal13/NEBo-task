@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/jayal13/NEBo-task/compare/v1.7.0...v1.8.0) (2025-01-28)
+
+
+### Features
+
+* add a new VPC with VPC peer connection ([fa86652](https://github.com/jayal13/NEBo-task/commit/fa86652d6bcc22183ce53c53ca460e24b9d2144e))
+
 # [1.7.0](https://github.com/jayal13/NEBo-task/compare/v1.6.0...v1.7.0) (2025-01-27)
 
 
