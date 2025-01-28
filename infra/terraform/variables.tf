@@ -65,3 +65,14 @@ variable "sns_email" {
   type = string
   description = "alerts email receiver"
 }
+
+variable "private_vpc_cidr" {
+  type    = string
+  default = "10.1.0.0/16"
+  # Rango IP que no traslape con var.vpc_ip
+}
+
+variable "private_subnet_cidr" {
+  type    = string
+  default = "10.1.1.0/24"
+}
