@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/jayal13/NEBo-task/compare/v1.9.0...v1.10.0) (2025-01-29)
+
+
+### Features
+
+* add real infrastucture ([604590a](https://github.com/jayal13/NEBo-task/commit/604590a9dbc500f5aa2baf2f3497182357cdfcc8))
+
 # [1.9.0](https://github.com/jayal13/NEBo-task/compare/v1.8.0...v1.9.0) (2025-01-28)
 
 
