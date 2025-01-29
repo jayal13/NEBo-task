@@ -155,8 +155,15 @@
   hosts: mysql
   become: yes
   vars_files:
-    - secrets.yml  # Archivo encriptado con Ansible Vault para guardar contraseñas
-  tasks:
+    - secrets.yml
+  pre_tasks:
+    - name: Instalar librería de Python para MySQL
+      apt:
+        name: 
+          - python3-pymysql
+        state: present
+      when: ansible_os_family == "Debian"
+      
     # 1. Verificar que MySQL está instalado
     - name: Instalar MySQL si es necesario
       ansible.builtin.apt:
